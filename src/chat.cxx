@@ -1,6 +1,7 @@
 #include "lingua/chat.hxx"
 #include <random>
 #include <fstream>
+#include <iostream>
 #include <regex>
 #include <cstdio>
 #include <chrono>
@@ -94,6 +95,12 @@ namespace lingua {
         return tokens;
     }
 
+    void Document::printTokens() const {
+        for (auto it = tokens.begin(); it != tokens.end(); ++it) {
+            std::cout << *it << std::endl;
+        }
+    }
+
     ChatEngine::ChatEngine(unsigned pvl, unsigned pcn) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
 
     ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
@@ -130,6 +137,11 @@ namespace lingua {
         sourceFile = src;
     }
 
+    void ChatEngine::printDocuments() const {
+        for (auto it = docs.begin(); it != docs.end(); ++it)
+            it->printTokens();
+    }
+
     std::vector<tag_t> ChatEngine::tokenize(const std::string &text) {
         std::vector<tag_t> tags;
         char buf[40];
@@ -159,7 +171,7 @@ namespace lingua {
 
     void ChatEngine::preprocess() {
         std::ifstream file(sourceFile);
-        std::regex regex("<TITLE>(.+)</TITLE>.+<BODY>(.+)</BODY>");
+        std::regex regex("<TITLE>((.|\\n)+)</TITLE>(.|\\n)+<BODY>((.|\\n)+)</BODY>");
         size_t fileSize;
         char *buf;
         std::string fileData;

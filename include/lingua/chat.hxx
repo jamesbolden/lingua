@@ -63,6 +63,8 @@ namespace lingua {
         std::string getTitle() const;
         std::string getText() const;
         std::vector<tag_t> getTokens() const;
+
+        void printTokens() const;
     private:
         ChatEngine* parent;
         std::string title;
@@ -85,6 +87,8 @@ namespace lingua {
         Infotbl getInfotbl() const;
 
         void setSourceFile(const std::string&);
+
+        void printDocuments() const;
 
         friend class Document;
     protected:
