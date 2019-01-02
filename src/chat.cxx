@@ -3,6 +3,7 @@
 #include <fstream>
 #include <regex>
 #include <cstdio>
+#include <chrono>
 
 namespace lingua {
     SemanticVector::SemanticVector(const ChatEngine *ce) : parent(ce), values(new float[ce->getVectorLength()]) {
@@ -22,6 +23,12 @@ namespace lingua {
             values[i] = vs[i];
     }
 
+    SemanticVector& SemanticVector::operator=(const SemanticVector &other) {
+        parent = other.parent;
+        values = other.values;
+        return *this;
+    }
+
     ChatEngine* SemanticVector::getParent() {
         return parent;
     }
@@ -35,7 +42,7 @@ namespace lingua {
     }
 
     void SemanticVector::setValues(const float *vs) {
-        auto vl = ce->getVectorLength();
+        auto vl = parent->getVectorLength();
 
         for (auto i = 0; i < vl; ++i)
             values[i] = vs[i];
@@ -45,7 +52,7 @@ namespace lingua {
         values[ix] = value;
     }
 
-    WordInfo::WordInfo(tag_t t, const std::string &txt) : tag(t), text(txt), semvec(new SemanticVector) { }
+    WordInfo::WordInfo(ChatEngine *ce, tag_t t, const std::string &txt) : tag(t), text(txt), semvec(new SemanticVector(ce)) { }
 
     tag_t WordInfo::getTag() const {
         return tag;
@@ -63,12 +70,13 @@ namespace lingua {
         if (semvec)
             *semvec = sv;
         else {
-            semvec = new SemanticVector;
-            *semvec = sv;
+            semvec = new SemanticVector(sv);
         }
     }
 
-    Document::Document(const ChatEngine *ce, const std::string &ti, const std::string &te) : parent(ce), title(ti), text(te), tokens(ce->tokenize(te)) { }
+    Document::Document(const ChatEngine *ce, const std::string &ti, const std::string &te) : parent(ce), title(ti), text(te), tokens() {
+        tokens = parent->tokenize(te);
+    }
 
     ChatEngine* Document::getParent() {
         return parent;
@@ -86,9 +94,9 @@ namespace lingua {
         return tokens;
     }
 
-    ChatEngine::ChatEngine(unsigned pvl = PARAM_DEFAULT_VECTOR_LENGTH, unsigned pcn = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
+    ChatEngine::ChatEngine(unsigned pvl, unsigned pcn) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
 
-    ChatEngine::ChatEngine(unsigned pvl = PARAM_DEFAULT_VECTOR_LENGTH, unsigned pcn = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, const std::string &src) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
+    ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
 
     void ChatEngine::analyzeSemantics() {
         preprocess();
@@ -96,6 +104,18 @@ namespace lingua {
 
     std::string ChatEngine::getSourceFile() const {
         return sourceFile;
+    }
+
+    std::vector<Document> ChatEngine::getDocs() const {
+        return docs;
+    }
+
+    unsigned ChatEngine::getVectorLength() const {
+        return pVectorLength;
+    }
+
+    unsigned ChatEngine::getContextNeighborhood() const {
+        return pContextNeighborhood;
     }
 
     Dictionary ChatEngine::getDict() const {
@@ -110,7 +130,7 @@ namespace lingua {
         sourceFile = src;
     }
 
-    std::vector<tag_t> tokenize(const std::string &text) {
+    std::vector<tag_t> ChatEngine::tokenize(const std::string &text) {
         std::vector<tag_t> tags;
         char buf[40];
         bool toksLeft = true;
@@ -119,7 +139,7 @@ namespace lingua {
             auto n = std::sscanf(text.c_str(), "%s", buf);
             std::string s(buf);
 
-            while (s.back() == "," || s.back() == "." || s.back() == "!" || s.back() == "?")
+            while (s.back() == ',' || s.back() == '.' || s.back() == '!' || s.back() == '?')
                 s.pop_back();
 
             if (n == EOF)
@@ -133,6 +153,8 @@ namespace lingua {
                 tags.push_back(tag);
             }
         }
+
+        return tags;
     }
 
     void ChatEngine::preprocess() {

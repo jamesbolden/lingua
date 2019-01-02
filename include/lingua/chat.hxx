@@ -28,6 +28,8 @@ namespace lingua {
         SemanticVector(const SemanticVector&) = default;
         SemanticVector(SemanticVector&&) = default;
 
+        SemanticVector& operator=(const SemanticVector&);
+
         ChatEngine* getParent();
         const float* getValues() const;
         float getValue(size_t) const;
@@ -42,7 +44,7 @@ namespace lingua {
 
     class WordInfo {
     public:
-        WordInfo(tag_t, const std::string&);
+        WordInfo(ChatEngine*, tag_t, const std::string&);
         WordInfo(const WordInfo&) = default;
         WordInfo(WordInfo&&) = default;
 
@@ -80,11 +82,14 @@ namespace lingua {
     class ChatEngine {
     public:
         ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
-        ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, const std::string&);
+        ChatEngine(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
 
         void analyzeSemantics();
 
         std::string getSourceFile() const;
+        std::vector<Document> getDocs() const;
+        unsigned getVectorLength() const;
+        unsigned getContextNeighborhood() const;
         Dictionary getDict() const;
         Infotbl getInfotbl() const;
 
