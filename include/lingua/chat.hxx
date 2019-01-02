@@ -9,15 +9,6 @@
 #define PARAM_DEFAULT_VECTOR_LENGTH         128
 #define PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD  4
 
-#define NOUN_TAG            0
-#define VERB_TAG            1
-#define INTERJECTION_TAG    2
-#define ADJECTIVE_TAG       3
-#define PREPOSITION_TAG     4
-#define CONJUNCTION_TAG     5
-#define PRONOUN_TAG         6
-#define ADVERB_TAG          7
-
 namespace lingua {
     class ChatEngine;
 
