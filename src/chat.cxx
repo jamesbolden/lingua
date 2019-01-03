@@ -21,11 +21,11 @@ namespace lingua {
     }
 
     float cosine(const SemanticVector &lhs, const SemanticVector &rhs) {
-        return (lhs * rhs) / (lhs.length() * rhs.length());
+        return (lhs * rhs) / (lhs.magnitude() * rhs.magnitude());
     }
 
-    SemanticVector::SemanticVector(ChatEngine *ce) : parent(ce), values(new float[ce->getVectorLength()]) {
-        auto vl = ce->getVectorLength();
+    SemanticVector::SemanticVector() : values(new float[ChatEngine::instance->getVectorLength()]) {
+        auto vl = ChatEngine::instance->getVectorLength();
         auto seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed);
         std::uniform_real_distribution<float> dist;
@@ -34,21 +34,16 @@ namespace lingua {
             values[i] = dist(gen);
     }
 
-    SemanticVector::SemanticVector(ChatEngine *ce, const float *vs) : parent(ce), values(new float[ce->getVectorLength()]) {
-        auto vl = ce->getVectorLength();
+    SemanticVector::SemanticVector(const float *vs) : values(new float[ChatEngine::instance->getVectorLength()]) {
+        auto vl = ChatEngine::instance->getVectorLength();
 
         for (auto i = 0; i < vl; ++i)
             values[i] = vs[i];
     }
 
     SemanticVector& SemanticVector::operator=(const SemanticVector &other) {
-        parent = other.parent;
         values = other.values;
         return *this;
-    }
-
-    ChatEngine* SemanticVector::getParent() {
-        return parent;
     }
 
     const float* SemanticVector::getValues() const {
@@ -60,7 +55,7 @@ namespace lingua {
     }
 
     void SemanticVector::setValues(const float *vs) {
-        auto vl = parent->getVectorLength();
+        auto vl = ChatEngine::instance->getVectorLength();
 
         for (auto i = 0; i < vl; ++i)
             values[i] = vs[i];
@@ -70,7 +65,7 @@ namespace lingua {
         values[ix] = value;
     }
 
-    float SemanticVector::length() const {
+    float SemanticVector::magnitude() const {
         auto vl = ChatEngine::instance->getVectorLength();
         float result = 0;
 
@@ -80,7 +75,7 @@ namespace lingua {
         return std::sqrt(result);
     }
 
-    WordInfo::WordInfo(ChatEngine *ce, tag_t t, const std::string &txt) : tag(t), text(txt), semEmb(new SemanticVector(ce)), ctxEmb(new SemanticVector(ce)) { }
+    WordInfo::WordInfo(tag_t t, const std::string &txt) : tag(t), text(txt), semEmb(new SemanticVector), ctxEmb(new SemanticVector) { }
 
     tag_t WordInfo::getTag() const {
         return tag;
@@ -120,12 +115,12 @@ namespace lingua {
 
     ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
 
-    void ChatEngine::initialize() {
-        instance = new ChatEngine;
+    void ChatEngine::initialize(unsigned pvl, unsigned pcn) {
+        instance = new ChatEngine(pvl, pcn);
     }
 
-    void ChatEngine::initialize(const std::string &src) {
-        instance = new ChatEngine(src);
+    void ChatEngine::initialize(const std::string &src, unsigned pvl, unsigned pvn) {
+        instance = new ChatEngine(src, pvl, pvn);
     }
 
     void ChatEngine::analyzeSemantics() {
@@ -170,7 +165,7 @@ namespace lingua {
             else {
                 tag_t tkn = dict.size();
                 dict[*it] = tkn;
-                infotbl[tkn] = WordInfo(instance, tkn, *it);
+                infotbl[tkn] = WordInfo(tkn, *it);
                 toks.push_back(tkn);
             }
         }

@@ -15,8 +15,8 @@ namespace lingua {
 
     class SemanticVector {
     public:
-        SemanticVector(ChatEngine*);
-        SemanticVector(ChatEngine*, const float*);
+        SemanticVector();
+        SemanticVector(const float*);
         SemanticVector(const SemanticVector&) = default;
         SemanticVector(SemanticVector&&) = default;
 
@@ -25,23 +25,21 @@ namespace lingua {
         friend float operator*(const SemanticVector&, const SemanticVector&);
         friend float cosine(const SemanticVector&, const SemanticVector&);
 
-        ChatEngine* getParent();
         const float* getValues() const;
         float getValue(size_t) const;
 
         void setValues(const float*);
         void setValue(size_t, float);
 
-        float length() const;
+        float magnitude() const;
     private:
-        ChatEngine* parent;
         float* values;
     };
 
     class WordInfo {
     public:
         WordInfo() = default;
-        WordInfo(ChatEngine*, tag_t, const std::string&);
+        WordInfo(tag_t, const std::string&);
         WordInfo(const WordInfo&) = default;
         WordInfo(WordInfo&&) = default;
 
@@ -70,8 +68,8 @@ namespace lingua {
         ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
         ChatEngine(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
 
-        static void initialize();
-        static void initialize(const std::string&);
+        static void initialize(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
+        static void initialize(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
 
         void analyzeSemantics();
 
