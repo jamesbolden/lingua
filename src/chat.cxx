@@ -1,9 +1,8 @@
 #include "lingua/chat.hxx"
-#include <Python.h>
-#include <boost/python/list.hpp>
-#include <boost/python/extract.hpp>
+#include <re2/re2.h>
 #include <boost/tokenizer.hpp>
 #include <random>
+#include <fstream>
 #include <iostream>
 #include <cstdio>
 #include <chrono>
@@ -126,6 +125,8 @@ namespace lingua {
                 toks.push_back(tkn);
             }
         }
+
+        return Document(toks);
     }
 
     void ChatEngine::printDocuments() const {
@@ -134,72 +135,34 @@ namespace lingua {
     }
 
     void ChatEngine::preprocess() {
-        PyObject *pName;
-        PyObject *pModule;
-        PyObject *pParseFunc;
-        PyObject *pArgs;
-        PyObject *pValue;
-        PyObject *syspath;
-        PyObject *path;
+        auto fh = std::fstream(sourceFile);
+        auto opts = re2::RE2::Options();
 
-        Py_Initialize();
-        syspath = PySys_GetObject("path");
-        path = PyUnicode_FromString(".");
-        PyList_Insert(syspath, 0, path);
-        pModule = PyImport_ImportModule("sgml");
+        opts.set_longest_match(false);
+        opts.set_dot_nl(true);
 
-        Py_DECREF(syspath);
-        Py_DECREF(path);
+        auto re = re2::RE2("\\<TITLE\\>(.*)\\</TITLE\\>.*\\<BODY\\>(.*)\\</BODY\\>", opts);
+        std::size_t length;
+        char* buffer;
+        re2::StringPiece sp;
 
-        if (pModule != nullptr) {
-            pParseFunc = PyObject_GetAttrString(pModule, "parseSGML");
+        fh.seekg(0, std::ios::end);
+        length = fh.tellg();
+        fh.seekg(0, std::ios::beg);
+        buffer = new char[length];
+        fh.read(buffer, length);
+        fh.close();
 
-            if (pParseFunc && PyCallable_Check(pParseFunc)) {
-                pArgs = PyTuple_New(1);
-                pValue = PyUnicode_FromString(sourceFile.c_str());
-                if (!pValue) {
-                    Py_DECREF(pArgs);
-                    Py_DECREF(pModule);
-                    std::cout << "lingua: Error while initializing python interface" << std::endl;
-                    std::exit(1);
-                }
+        sp = re2::StringPiece(buffer);
 
-                PyTuple_SetItem(pArgs, 0, pValue);
-                pValue = PyObject_CallObject(pParseFunc, pArgs);
-                Py_DECREF(pArgs);
-                if (pValue != nullptr) {
-                    auto len = PyList_Size(pValue);
+        while (true) {
+            std::string title;
+            std::string body;
 
-                    for (auto i = 0; i < len; ++i) {
-                        PyObject* item = PyList_GetItem(pValue, i);
+            if (!re2::RE2::FindAndConsume(&sp, re, &title, &body))
+                break;
 
-                        if (!PyUnicode_Check(item)) {
-                            std::cout << "lingua: python returned broken list" << std::endl;
-                            std::exit(1);
-                        }
-
-                        const char* cstr = PyUnicode_AS_DATA(item);
-                        if (cstr == nullptr) {
-                            std::cout << "lingua: python returned null string" << std::endl;
-                            std::exit(1);
-                        }
-                        std::string str(cstr);
-                        Document doc(tokenize(str));
-                        std::cout << doc << std::endl;
-                        docs.push_back(doc);
-                        Py_DECREF(item);
-                    }
-                    Py_DECREF(pValue);
-                }
-                Py_DECREF(pParseFunc);
-                Py_DECREF(pModule);
-            }
+            docs.push_back(tokenize(body));
         }
-        else {
-            std::cout << "lingua: Error while initializing python interface" << std::endl;
-            std::exit(1);
-        }
-
-        Py_Finalize();
     }
 }
