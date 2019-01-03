@@ -5,26 +5,18 @@
 %option noyywrap c++
 
 %x TITLE
+%x ENDTITLE
 %x BODY
-
-OPENTITLE   \<TITLE\>
-CLOSETITLE  \</TITLE\>
-OPENBODY    \<BODY\>
-CLOSEBODY   \</BODY\>
+%x ENDBODY
 
 %%
 
-{OPENTITLE}             BEGIN(TITLE);
-{OPENBODY}              BEGIN(BODY);
-<TITLE>{
-    "<\/TITLE>"         BEGIN(INITIAL);
-    (.|\n)*             lingua::ChatEngine::Tokenizer::currentTitle = YYText();
-}
-<BODY>{
-    "<\/BODY>"          { lingua::ChatEngine::instance->addDoc(lingua::ChatEngine::instance->handleToks(lingua::ChatEngine::Tokenizer::currentBody)); lingua::ChatEngine::Tokenizer::currentBody.clear(); BEGIN(INITIAL); }
-    (\w|['\-])+         lingua::ChatEngine::Tokenizer::currentBody.push_back(YYText());
-    .                   ;
-}
+"<TITLE>"               BEGIN(TITLE);
+"<BODY>"                BEGIN(BODY);
+<TITLE>[^<>]+           { BEGIN(ENDTITLE); lingua::ChatEngine::Tokenizer::currentTitle = YYText(); }
+<ENDTITLE>"</TITLE>"    BEGIN(INITIAL);
+<BODY>[^<>]+            { BEGIN(ENDBODY); lingua::ChatEngine::Tokenizer::currentBody = YYText(); }
+<ENDBODY>"</BODY>"      { BEGIN(INITIAL); lingua::ChatEngine::instance->addDoc(lingua::ChatEngine::instance->tokenize(lingua::ChatEngine::Tokenizer::currentBody)); }
 .                       ;
 
 %%

@@ -67,7 +67,7 @@ namespace lingua {
     public:
         struct Tokenizer {
             static std::string currentTitle;
-            static std::vector<std::string> currentBody;
+            static std::string currentBody;
         };
 
         static ChatEngine *instance;

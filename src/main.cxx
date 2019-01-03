@@ -6,7 +6,5 @@ int main(int argc, char **argv) {
     lingua::ChatEngine::instance->analyzeSemantics();
 //    ce.printDocuments();
 
-    std::cout << "This file contains " << lingua::ChatEngine::instance->getDocs().size() << " documents" << std::endl;
-
     return 0;
 }

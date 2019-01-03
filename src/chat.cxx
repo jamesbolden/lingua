@@ -112,7 +112,7 @@ namespace lingua {
 
     std::string ChatEngine::Tokenizer::currentTitle = "";
 
-    std::vector<std::string> ChatEngine::Tokenizer::currentBody;
+    std::string ChatEngine::Tokenizer::currentBody;
 
     ChatEngine* ChatEngine::instance = nullptr;
 
@@ -235,7 +235,8 @@ namespace lingua {
 
         close(fd); */
         std::ifstream fh(sourceFile);
-        FlexLexer *lexer = new yyFlexLexer(fh, std::cout);
+        std::ofstream nullDev("/dev/null");
+        FlexLexer *lexer = new yyFlexLexer(fh, nullDev);
 
         lexer->yylex();
     }
