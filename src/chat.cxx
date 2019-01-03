@@ -1,6 +1,9 @@
 #include "lingua/chat.hxx"
 #include <re2/re2.h>
 #include <boost/tokenizer.hpp>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <random>
 #include <fstream>
 #include <iostream>
@@ -181,7 +184,7 @@ namespace lingua {
     }
 
     void ChatEngine::preprocess() {
-        auto fh = std::fstream(sourceFile);
+        auto fd = open(sourceFile.c_str(), O_RDWR);
         auto opts = re2::RE2::Options();
 
         opts.set_longest_match(false);
@@ -189,17 +192,15 @@ namespace lingua {
 
         auto re = re2::RE2("<TITLE>(.*)</TITLE>.*<BODY>(.*)</BODY>", opts);
         std::size_t length;
-        char* buffer;
         re2::StringPiece sp;
+        char *ptr;
+        struct stat st;
 
-        fh.seekg(0, std::ios::end);
-        length = fh.tellg();
-        fh.seekg(0, std::ios::beg);
-        buffer = new char[length];
-        fh.read(buffer, length);
-        fh.close();
+        fstat(fd, &st);
+        length = st.st_size;
 
-        sp = re2::StringPiece(buffer);
+        ptr = (char*)mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+        sp = re2::StringPiece(ptr);
 
         while (true) {
             std::string title;
@@ -210,5 +211,7 @@ namespace lingua {
 
             docs.push_back(tokenize(body));
         }
+
+        close(fd);
     }
 }
