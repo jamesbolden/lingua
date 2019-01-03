@@ -111,16 +111,16 @@ namespace lingua {
 
     ChatEngine* ChatEngine::instance = nullptr;
 
-    ChatEngine::ChatEngine(unsigned pvl, unsigned pcn) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
+    ChatEngine::ChatEngine(unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), dict(), infotbl() { }
 
-    ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
+    ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), dict(), infotbl() { }
 
-    void ChatEngine::initialize(unsigned pvl, unsigned pcn) {
-        instance = new ChatEngine(pvl, pcn);
+    void ChatEngine::initialize(unsigned pvl, unsigned pcn, unsigned pnr) {
+        instance = new ChatEngine(pvl, pcn, pnr);
     }
 
-    void ChatEngine::initialize(const std::string &src, unsigned pvl, unsigned pvn) {
-        instance = new ChatEngine(src, pvl, pvn);
+    void ChatEngine::initialize(const std::string &src, unsigned pvl, unsigned pvn, unsigned pnr) {
+        instance = new ChatEngine(src, pvl, pvn, pnr);
     }
 
     void ChatEngine::analyzeSemantics() {

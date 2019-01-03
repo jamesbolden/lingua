@@ -10,27 +10,10 @@
 
 #define PARAM_DEFAULT_VECTOR_LENGTH         128
 #define PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD  4
+#define PARAM_DEFAULT_NOISE_RATIO           3
 
 namespace lingua {
     class ChatEngine;
-
-    template <typename Real> void dot(const Real *lhs, const Real *rhs, Real *result) {
-        auto vl = ChatEngine::instance->getVectorLength();
-        *result = 0;
-        for (auto i = 0; i < vl; ++i)
-            *result += lhs[i] * rhs[i];
-    }
-
-    template <typename Real> void logisticRegression(const Real *targetEmbedding, const Real *contextEmbedding, const Real **noiseEmbeddings, Real *result) {
-        auto n = ChatEngine::instance->getContextNeighborhood();
-
-        dot(contextEmbedding, targetEmbedding, result);
-        *result *= -1;
-        *result = codi::exp(*result);
-        *result += 1;
-        *result = 1 / *result;
-        *result = codi::log(*result);
-    }
 
     class SemanticVector {
     public:
@@ -84,11 +67,11 @@ namespace lingua {
     public:
         static ChatEngine *instance;
 
-        ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
-        ChatEngine(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
+        ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, unsigned = PARAM_DEFAULT_NOISE_RATIO);
+        ChatEngine(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, unsigned = PARAM_DEFAULT_NOISE_RATIO);
 
-        static void initialize(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
-        static void initialize(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
+        static void initialize(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, unsigned = PARAM_DEFAULT_NOISE_RATIO);
+        static void initialize(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, unsigned = PARAM_DEFAULT_NOISE_RATIO);
 
         void analyzeSemantics();
 
@@ -96,6 +79,7 @@ namespace lingua {
         std::vector<Document> getDocs() const;
         unsigned getVectorLength() const;
         unsigned getContextNeighborhood() const;
+        unsigned getNoiseRatio() const;
         Dictionary getDict() const;
         Infotbl getInfotbl() const;
 
@@ -111,9 +95,30 @@ namespace lingua {
         std::vector<Document> docs;
         unsigned pVectorLength;
         unsigned pContextNeighborhood;
+        unsigned pNoiseRatio;
         Dictionary dict;
         Infotbl infotbl;
     };
+
+    template <typename Real> Real dot(const Real *lhs, const Real *rhs) {
+        auto vl = ChatEngine::instance->getVectorLength();
+        Real result = 0;
+
+        for (auto i = 0; i < vl; ++i)
+            result += lhs[i] * rhs[i];
+
+        return result;
+    }
+
+    template <typename Real> Real logisticRegression(const Real *targetEmbedding, const Real *contextEmbedding, std::vector<const Real*> noiseEmbeddings) {
+        auto n = ChatEngine::instance->getNoiseRatio();
+        Real result = codi::log(1 / (1 + codi::exp(-1 * dot(contextEmbedding, targetEmbedding))));
+
+        for (auto i = 0; i < n; ++i)
+            result += codi::log(1 / (1 + codi::exp(dot(noiseEmbeddings[i], targetEmbedding))));
+
+        return result;
+    }
 }
 
 #endif // LINGUA_CHAT_HXX
