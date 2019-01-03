@@ -1,9 +1,8 @@
 #include "lingua/chat.hxx"
-#include "lex.yy.h"
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
 #include <random>
-#include <fstream>
 #include <iostream>
-#include <regex>
 #include <cstdio>
 #include <chrono>
 
@@ -118,9 +117,24 @@ namespace lingua {
     }
 
     void ChatEngine::preprocess() {
-        FILE *fd = std::fopen(sourceFile.c_str(), "r");
-        Lexer lexer(fd);
-        lexer.lex();
-        docs = lexer.getDocs();
+        xmlDocPtr doc;
+        xmlNodePtr cur;
+
+        doc = xmlParseFile(sourceFile.c_str());
+
+        if (doc == nullptr) {
+            std::cout << "lingua: Failure while parsing corpus" << std::endl;
+            std::exit(1);
+        }
+
+        cur = xmlDocGetRootElement(doc);
+
+        if (cur == nullptr) {
+            std::cout << "lingua: Failure while parsing corpus" << std::endl;
+            xmlFreeDoc(doc);
+            std::exit(1);
+        }
+
+        std::cout << cur->name << std::endl;
     }
 }
