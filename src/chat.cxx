@@ -1,6 +1,8 @@
 #include "lingua/chat.hxx"
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
+#include <Python.h>
+#include <boost/python/list.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/tokenizer.hpp>
 #include <random>
 #include <iostream>
 #include <cstdio>
@@ -111,30 +113,93 @@ namespace lingua {
         sourceFile = src;
     }
 
+    Document ChatEngine::tokenize(const std::string &text) {
+        boost::tokenizer<> tknzr(text);
+        std::vector<tag_t> toks;
+
+        for (auto it = tknzr.begin(); it != tknzr.end(); ++it) {
+            if (dict.find(*it) != dict.end())
+                toks.push_back(dict[*it]);
+            else {
+                tag_t tkn = dict.size();
+                dict[*it] = tkn;
+                toks.push_back(tkn);
+            }
+        }
+    }
+
     void ChatEngine::printDocuments() const {
         for (auto it = docs.begin(); it != docs.end(); ++it)
             it->printTokens();
     }
 
     void ChatEngine::preprocess() {
-        xmlDocPtr doc;
-        xmlNodePtr cur;
+        PyObject *pName;
+        PyObject *pModule;
+        PyObject *pParseFunc;
+        PyObject *pArgs;
+        PyObject *pValue;
+        PyObject *syspath;
+        PyObject *path;
 
-        doc = xmlParseFile(sourceFile.c_str());
+        Py_Initialize();
+        syspath = PySys_GetObject("path");
+        path = PyUnicode_FromString(".");
+        PyList_Insert(syspath, 0, path);
+        pModule = PyImport_ImportModule("sgml");
 
-        if (doc == nullptr) {
-            std::cout << "lingua: Failure while parsing corpus" << std::endl;
+        Py_DECREF(syspath);
+        Py_DECREF(path);
+
+        if (pModule != nullptr) {
+            pParseFunc = PyObject_GetAttrString(pModule, "parseSGML");
+
+            if (pParseFunc && PyCallable_Check(pParseFunc)) {
+                pArgs = PyTuple_New(1);
+                pValue = PyUnicode_FromString(sourceFile.c_str());
+                if (!pValue) {
+                    Py_DECREF(pArgs);
+                    Py_DECREF(pModule);
+                    std::cout << "lingua: Error while initializing python interface" << std::endl;
+                    std::exit(1);
+                }
+
+                PyTuple_SetItem(pArgs, 0, pValue);
+                pValue = PyObject_CallObject(pParseFunc, pArgs);
+                Py_DECREF(pArgs);
+                if (pValue != nullptr) {
+                    auto len = PyList_Size(pValue);
+
+                    for (auto i = 0; i < len; ++i) {
+                        PyObject* item = PyList_GetItem(pValue, i);
+
+                        if (!PyUnicode_Check(item)) {
+                            std::cout << "lingua: python returned broken list" << std::endl;
+                            std::exit(1);
+                        }
+
+                        const char* cstr = PyUnicode_AS_DATA(item);
+                        if (cstr == nullptr) {
+                            std::cout << "lingua: python returned null string" << std::endl;
+                            std::exit(1);
+                        }
+                        std::string str(cstr);
+                        Document doc(tokenize(str));
+                        std::cout << doc << std::endl;
+                        docs.push_back(doc);
+                        Py_DECREF(item);
+                    }
+                    Py_DECREF(pValue);
+                }
+                Py_DECREF(pParseFunc);
+                Py_DECREF(pModule);
+            }
+        }
+        else {
+            std::cout << "lingua: Error while initializing python interface" << std::endl;
             std::exit(1);
         }
 
-        cur = xmlDocGetRootElement(doc);
-
-        if (cur == nullptr) {
-            std::cout << "lingua: Failure while parsing corpus" << std::endl;
-            xmlFreeDoc(doc);
-            std::exit(1);
-        }
-
-        std::cout << cur->name << std::endl;
+        Py_Finalize();
     }
 }

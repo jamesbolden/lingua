@@ -2,9 +2,15 @@
 #include "lingua/document.hxx"
 
 namespace lingua {
-    Document::Document(const std::string &ti, const std::vector<tag_t> &tkns) : title(ti), tokens(tkns) { }
+    Document::Document(const std::vector<tag_t> &tkns) : tokens(tkns) { }
 
-    std::string Document::getTitle() const { return title; }
+    std::ostream& operator<<(std::ostream &os, const Document &doc) {
+        for (auto it = doc.tokens.cbegin(); it != doc.tokens.cend(); ++it) {
+            os << *it << std::endl;
+        }
+
+        return os;
+    }
 
     std::vector<tag_t> Document::getTokens() const { return tokens; }
 

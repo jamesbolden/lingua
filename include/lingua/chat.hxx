@@ -69,6 +69,7 @@ namespace lingua {
 
         void setSourceFile(const std::string&);
 
+        Document tokenize(const std::string&);
         void printDocuments() const;
     private:
         void preprocess();
