@@ -15,12 +15,15 @@ namespace lingua {
 
     class SemanticVector {
     public:
-        SemanticVector(const ChatEngine*);
-        SemanticVector(const ChatEngine*, const float*);
+        SemanticVector(ChatEngine*);
+        SemanticVector(ChatEngine*, const float*);
         SemanticVector(const SemanticVector&) = default;
         SemanticVector(SemanticVector&&) = default;
 
         SemanticVector& operator=(const SemanticVector&);
+
+        friend float operator*(const SemanticVector&, const SemanticVector&);
+        friend float cosine(const SemanticVector&, const SemanticVector&);
 
         ChatEngine* getParent();
         const float* getValues() const;
@@ -29,6 +32,7 @@ namespace lingua {
         void setValues(const float*);
         void setValue(size_t, float);
 
+        float length() const;
     private:
         ChatEngine* parent;
         float* values;
@@ -36,27 +40,38 @@ namespace lingua {
 
     class WordInfo {
     public:
+        WordInfo() = default;
         WordInfo(ChatEngine*, tag_t, const std::string&);
         WordInfo(const WordInfo&) = default;
         WordInfo(WordInfo&&) = default;
 
+        WordInfo& operator=(const WordInfo&) = default;
+
         tag_t getTag() const;
         std::string getText() const;
-        const SemanticVector* getSemVec() const;
+        const SemanticVector* getSemanticEmbedding() const;
+        const SemanticVector* getContextEmbedding() const;
 
-        void setSemVec(const SemanticVector&);
+        void setSemanticEmbedding(const SemanticVector&);
+        void setContextEmbedding(const SemanticVector&);
     private:
         tag_t tag;
         std::string text;
-        SemanticVector* semvec;
+        SemanticVector* semEmb;
+        SemanticVector* ctxEmb;
     };
 
     typedef std::unordered_map<tag_t, WordInfo> Infotbl;
 
     class ChatEngine {
     public:
+        static ChatEngine *instance;
+
         ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
         ChatEngine(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD);
+
+        static void initialize();
+        static void initialize(const std::string&);
 
         void analyzeSemantics();
 

@@ -5,10 +5,23 @@
 #include <fstream>
 #include <iostream>
 #include <cstdio>
+#include <cmath>
 #include <chrono>
 
 namespace lingua {
-    SemanticVector::SemanticVector(const ChatEngine *ce) : parent(ce), values(new float[ce->getVectorLength()]) {
+    float operator*(const SemanticVector &lhs, const SemanticVector &rhs) {
+        float result = 0;
+        auto vl = ChatEngine::instance->getVectorLength();
+        for (auto i = 0; i < vl; ++i)
+            result += lhs.values[i] * rhs.values[i];
+        return result;
+    }
+
+    float cosine(const SemanticVector &lhs, const SemanticVector &rhs) {
+        return (lhs * rhs) / (lhs.length() * rhs.length());
+    }
+
+    SemanticVector::SemanticVector(ChatEngine *ce) : parent(ce), values(new float[ce->getVectorLength()]) {
         auto vl = ce->getVectorLength();
         auto seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed);
@@ -18,7 +31,7 @@ namespace lingua {
             values[i] = dist(gen);
     }
 
-    SemanticVector::SemanticVector(const ChatEngine *ce, const float *vs) : parent(ce), values(new float[ce->getVectorLength()]) {
+    SemanticVector::SemanticVector(ChatEngine *ce, const float *vs) : parent(ce), values(new float[ce->getVectorLength()]) {
         auto vl = ce->getVectorLength();
 
         for (auto i = 0; i < vl; ++i)
@@ -54,7 +67,17 @@ namespace lingua {
         values[ix] = value;
     }
 
-    WordInfo::WordInfo(ChatEngine *ce, tag_t t, const std::string &txt) : tag(t), text(txt), semvec(new SemanticVector(ce)) { }
+    float SemanticVector::length() const {
+        auto vl = ChatEngine::instance->getVectorLength();
+        float result = 0;
+
+        for (auto i = 0; i < vl; ++i)
+            result += values[i] * values[i];
+
+        return std::sqrt(result);
+    }
+
+    WordInfo::WordInfo(ChatEngine *ce, tag_t t, const std::string &txt) : tag(t), text(txt), semEmb(new SemanticVector(ce)), ctxEmb(new SemanticVector(ce)) { }
 
     tag_t WordInfo::getTag() const {
         return tag;
@@ -64,21 +87,43 @@ namespace lingua {
         return text;
     }
 
-    const SemanticVector* WordInfo::getSemVec() const {
-        return semvec;
+    const SemanticVector* WordInfo::getSemanticEmbedding() const {
+        return semEmb;
     }
 
-    void WordInfo::setSemVec(const SemanticVector &sv) {
-        if (semvec)
-            *semvec = sv;
+    const SemanticVector* WordInfo::getContextEmbedding() const {
+        return ctxEmb;
+    }
+
+    void WordInfo::setSemanticEmbedding(const SemanticVector &sv) {
+        if (semEmb)
+            *semEmb = sv;
         else {
-            semvec = new SemanticVector(sv);
+            semEmb = new SemanticVector(sv);
         }
     }
+
+    void WordInfo::setContextEmbedding(const SemanticVector &cv) {
+        if (ctxEmb)
+            *ctxEmb = cv;
+        else {
+            ctxEmb = new SemanticVector(cv);
+        }
+    }
+
+    ChatEngine* ChatEngine::instance = nullptr;
 
     ChatEngine::ChatEngine(unsigned pvl, unsigned pcn) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
 
     ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
+
+    void ChatEngine::initialize() {
+        instance = new ChatEngine;
+    }
+
+    void ChatEngine::initialize(const std::string &src) {
+        instance = new ChatEngine(src);
+    }
 
     void ChatEngine::analyzeSemantics() {
         preprocess();
@@ -122,6 +167,7 @@ namespace lingua {
             else {
                 tag_t tkn = dict.size();
                 dict[*it] = tkn;
+                infotbl[tkn] = WordInfo(instance, tkn, *it);
                 toks.push_back(tkn);
             }
         }
@@ -141,7 +187,7 @@ namespace lingua {
         opts.set_longest_match(false);
         opts.set_dot_nl(true);
 
-        auto re = re2::RE2("\\<TITLE\\>(.*)\\</TITLE\\>.*\\<BODY\\>(.*)\\</BODY\\>", opts);
+        auto re = re2::RE2("<TITLE>(.*)</TITLE>.*<BODY>(.*)</BODY>", opts);
         std::size_t length;
         char* buffer;
         re2::StringPiece sp;
