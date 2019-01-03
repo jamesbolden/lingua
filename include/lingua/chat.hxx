@@ -1,6 +1,7 @@
 #ifndef LINGUA_CHAT_HXX
 #define LINGUA_CHAT_HXX
 
+#include <CoDiPack/codi.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -12,6 +13,23 @@
 
 namespace lingua {
     class ChatEngine;
+
+    template <typename Real> void dot(const Real *lhs, const Real *rhs, Real *result) {
+        auto vl = ChatEngine::instance->getVectorLength();
+        *result = 0;
+        for (auto i = 0; i < vl; ++i)
+            *result += lhs[i] * rhs[i];
+    }
+
+    template <typename Real> void logisticRegression(const Real *targetEmbedding, const Real *contextEmbedding, const Real **noiseEmbeddings, Real *result) {
+        auto n = ChatEngine::instance->getContextNeighborhood();
+
+        dot(contextEmbedding, targetEmbedding, result);
+        *result *= -1;
+        *result = codi::exp(*result);
+        *result += 1;
+        *result = 1 / *result;
+    }
 
     class SemanticVector {
     public:
