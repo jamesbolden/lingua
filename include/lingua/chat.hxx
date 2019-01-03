@@ -29,6 +29,7 @@ namespace lingua {
         *result = codi::exp(*result);
         *result += 1;
         *result = 1 / *result;
+        *result = codi::log(*result);
     }
 
     class SemanticVector {
