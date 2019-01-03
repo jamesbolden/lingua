@@ -213,35 +213,6 @@ namespace lingua {
     }
 
     void ChatEngine::preprocess() {
-/*        auto fd = open(sourceFile.c_str(), O_RDWR);
-        auto opts = re2::RE2::Options();
-
-        opts.set_longest_match(false);
-        opts.set_dot_nl(true);
-
-        auto re = re2::RE2("<TITLE>(.*)</TITLE>.*<BODY>(.*)</BODY>", opts);
-        std::size_t length;
-        re2::StringPiece sp;
-        char *ptr;
-        struct stat st;
-
-        fstat(fd, &st);
-        length = st.st_size;
-
-        ptr = (char*)mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-        sp = re2::StringPiece(ptr);
-
-        while (true) {
-            std::string title;
-            std::string body;
-
-            if (!re2::RE2::FindAndConsume(&sp, re, &title, &body))
-                break;
-
-            docs.push_back(tokenize(body));
-        }
-
-        close(fd); */
         std::ifstream fh(sourceFile);
         std::ofstream nullDev("/dev/null");
         FlexLexer *lexer = new yyFlexLexer(fh, nullDev);
