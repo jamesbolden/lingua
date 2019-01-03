@@ -65,6 +65,11 @@ namespace lingua {
 
     class ChatEngine {
     public:
+        struct Tokenizer {
+            static std::string currentTitle;
+            static std::vector<std::string> currentBody;
+        };
+
         static ChatEngine *instance;
 
         ChatEngine(unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, unsigned = PARAM_DEFAULT_NOISE_RATIO);
@@ -85,7 +90,10 @@ namespace lingua {
 
         void setSourceFile(const std::string&);
 
+        void addDoc(const Document&);
+
         Document tokenize(const std::string&);
+        Document handleToks(const std::vector<std::string>&);
         void printDocuments() const;
     private:
         void preprocess();

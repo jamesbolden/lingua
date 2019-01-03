@@ -4,11 +4,11 @@ BINDIR=bin
 EXE=$(BINDIR)/lingua
 CXX=g++
 CXXFLAGS=-std=gnu++1z -O3 -I$(INCDIR) -I/usr/include -fpermissive -g
-OBJS=$(BINDIR)/chat.o $(BINDIR)/document.o $(BINDIR)/main.o
-SRCS=$(SRCDIR)/chat.cxx $(SRCDIR)/document.cxx$(SRCDIR)/main.cxx
+OBJS=$(BINDIR)/chat.o $(BINDIR)/document.o $(BINDIR)/tokenizer.yy.o $(BINDIR)/main.o
+SRCS=$(SRCDIR)/chat.cxx $(SRCDIR)/document.cxx $(SRCDIR)/tokenizer.yy.cxx $(SRCDIR)/main.cxx
 
 $(EXE): $(OBJS)
-	$(CXX) -o $@ $^ -lre2 -lm
+	$(CXX) -o $@ $^ -lm -lfl
 
 $(BINDIR)/%.o: $(SRCDIR)/%.cxx
 	$(CXX) -c $(CXXFLAGS) $< -o $@

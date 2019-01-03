@@ -1,4 +1,5 @@
 #include "lingua/chat.hxx"
+#include <FlexLexer.h>
 #include <re2/re2.h>
 #include <boost/tokenizer.hpp>
 #include <sys/mman.h>
@@ -109,6 +110,10 @@ namespace lingua {
         }
     }
 
+    std::string ChatEngine::Tokenizer::currentTitle = "";
+
+    std::vector<std::string> ChatEngine::Tokenizer::currentBody;
+
     ChatEngine* ChatEngine::instance = nullptr;
 
     ChatEngine::ChatEngine(unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), dict(), infotbl() { }
@@ -155,6 +160,10 @@ namespace lingua {
         sourceFile = src;
     }
 
+    void ChatEngine::addDoc(const Document &doc) {
+        docs.push_back(doc);
+    }
+
     Document ChatEngine::tokenize(const std::string &text) {
         boost::tokenizer<> tknzr(text);
         std::vector<tag_t> toks;
@@ -173,13 +182,30 @@ namespace lingua {
         return Document(toks);
     }
 
+    Document ChatEngine::handleToks(const std::vector<std::string> &toks) {
+        std::vector<tag_t> tkns;
+
+        for (auto it = toks.cbegin(); it != toks.cend(); ++it) {
+            if (dict.find(*it) != dict.end())
+                tkns.push_back(dict[*it]);
+            else {
+                tag_t tkn = dict.size();
+                dict[*it] = tkn;
+                infotbl[tkn] = WordInfo(tkn, *it);
+                tkns.push_back(tkn);
+            }
+        }
+
+        return Document(tkns);
+    }
+
     void ChatEngine::printDocuments() const {
         for (auto it = docs.begin(); it != docs.end(); ++it)
             it->printTokens();
     }
 
     void ChatEngine::preprocess() {
-        auto fd = open(sourceFile.c_str(), O_RDWR);
+/*        auto fd = open(sourceFile.c_str(), O_RDWR);
         auto opts = re2::RE2::Options();
 
         opts.set_longest_match(false);
@@ -207,6 +233,10 @@ namespace lingua {
             docs.push_back(tokenize(body));
         }
 
-        close(fd);
+        close(fd); */
+        std::ifstream fh(sourceFile);
+        FlexLexer *lexer = new yyFlexLexer(fh, std::cout);
+
+        lexer->yylex();
     }
 }
