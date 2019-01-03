@@ -116,9 +116,9 @@ namespace lingua {
 
     ChatEngine* ChatEngine::instance = nullptr;
 
-    ChatEngine::ChatEngine(unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), dict(), infotbl() { }
+    ChatEngine::ChatEngine(unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), learningRate(PARAM_DEFAULT_INITIAL_LEARNING_RATE), dict(), infotbl() { }
 
-    ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), dict(), infotbl() { }
+    ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn, unsigned pnr) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), pNoiseRatio(pnr), learningRate(PARAM_DEFAULT_INITIAL_LEARNING_RATE), dict(), infotbl() { }
 
     void ChatEngine::initialize(unsigned pvl, unsigned pcn, unsigned pnr) {
         instance = new ChatEngine(pvl, pcn, pnr);
@@ -146,6 +146,14 @@ namespace lingua {
 
     unsigned ChatEngine::getContextNeighborhood() const {
         return pContextNeighborhood;
+    }
+
+    unsigned ChatEngine::getNoiseRatio() const {
+        return pNoiseRatio;
+    }
+
+    float ChatEngine::getLearningRate() const {
+        return learningRate;
     }
 
     Dictionary ChatEngine::getDict() const {

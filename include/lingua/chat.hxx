@@ -11,6 +11,7 @@
 #define PARAM_DEFAULT_VECTOR_LENGTH         128
 #define PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD  4
 #define PARAM_DEFAULT_NOISE_RATIO           3
+#define PARAM_DEFAULT_INITIAL_LEARNING_RATE 0.01
 
 namespace lingua {
     class ChatEngine;
@@ -85,6 +86,7 @@ namespace lingua {
         unsigned getVectorLength() const;
         unsigned getContextNeighborhood() const;
         unsigned getNoiseRatio() const;
+        float getLearningRate() const;
         Dictionary getDict() const;
         Infotbl getInfotbl() const;
 
@@ -104,6 +106,7 @@ namespace lingua {
         unsigned pVectorLength;
         unsigned pContextNeighborhood;
         unsigned pNoiseRatio;
+        float learningRate;
         Dictionary dict;
         Infotbl infotbl;
     };
@@ -119,10 +122,10 @@ namespace lingua {
     }
 
     template <typename Real> Real logisticRegression(const Real *targetEmbedding, const Real *contextEmbedding, std::vector<const Real*> noiseEmbeddings) {
-        auto n = ChatEngine::instance->getNoiseRatio();
+        auto k = ChatEngine::instance->getNoiseRatio();
         Real result = codi::log(1 / (1 + codi::exp(-1 * dot(contextEmbedding, targetEmbedding))));
 
-        for (auto i = 0; i < n; ++i)
+        for (auto i = 0; i < k; ++i)
             result += codi::log(1 / (1 + codi::exp(dot(noiseEmbeddings[i], targetEmbedding))));
 
         return result;
