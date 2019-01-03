@@ -1,4 +1,5 @@
 #include "lingua/chat.hxx"
+#include "lex.yy.h"
 #include <random>
 #include <fstream>
 #include <iostream>
@@ -75,32 +76,6 @@ namespace lingua {
         }
     }
 
-    Document::Document(const ChatEngine *ce, const std::string &ti, const std::string &te) : parent(ce), title(ti), text(te), tokens() {
-        tokens = parent->tokenize(te);
-    }
-
-    ChatEngine* Document::getParent() {
-        return parent;
-    }
-
-    std::string Document::getTitle() const {
-        return title;
-    }
-
-    std::string Document::getText() const {
-        return text;
-    }
-
-    std::vector<tag_t> Document::getTokens() const {
-        return tokens;
-    }
-
-    void Document::printTokens() const {
-        for (auto it = tokens.begin(); it != tokens.end(); ++it) {
-            std::cout << *it << std::endl;
-        }
-    }
-
     ChatEngine::ChatEngine(unsigned pvl, unsigned pcn) : sourceFile("-"), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
 
     ChatEngine::ChatEngine(const std::string &src, unsigned pvl, unsigned pcn) : sourceFile(src), docs(), pVectorLength(pvl), pContextNeighborhood(pcn), dict(), infotbl() { }
@@ -142,62 +117,10 @@ namespace lingua {
             it->printTokens();
     }
 
-    std::vector<tag_t> ChatEngine::tokenize(const std::string &text) {
-        std::vector<tag_t> tags;
-        char buf[40];
-        bool toksLeft = true;
-
-        while (toksLeft) {
-            auto n = std::sscanf(text.c_str(), "%s", buf);
-            std::string s(buf);
-
-            while (s.back() == ',' || s.back() == '.' || s.back() == '!' || s.back() == '?')
-                s.pop_back();
-
-            if (n == EOF)
-                toksLeft = false;
-
-            if (dict.find(s) != dict.end()) {
-                tags.push_back(dict[s]);
-            } else {
-                tag_t tag = dict.size();
-                dict[s] = tag;
-                tags.push_back(tag);
-            }
-        }
-
-        return tags;
-    }
-
     void ChatEngine::preprocess() {
-        std::ifstream file(sourceFile);
-        std::regex regex("<TITLE>((.|\\n)+)</TITLE>(.|\\n)+<BODY>((.|\\n)+)</BODY>");
-        size_t fileSize;
-        char *buf;
-        std::string fileData;
-
-        file.seekg(0, file.end);
-        fileSize = file.tellg();
-        file.seekg(0, file.beg);
-
-        buf = new char[fileSize];
-        file.read(buf, fileSize);
-
-        fileData = std::string(buf);
-        bool matched = true;
-
-        while (matched) {
-            std::smatch m;
-            size_t ix;
-            matched = std::regex_search(fileData, m, regex);
-
-            if (matched) {
-                ix = m.prefix().str().length() + m.str().length();
-                fileData = std::string(fileData, ix);
-
-                Document doc(this, m[0].str(), m[1].str());
-                docs.push_back(doc);
-            }
-        }
+        FILE *fd = std::fopen(sourceFile.c_str(), "r");
+        Lexer lexer(fd);
+        lexer.lex();
+        docs = lexer.getDocs();
     }
 }

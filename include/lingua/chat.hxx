@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include "lingua/types.hxx"
+#include "lingua/document.hxx"
 
 #define PARAM_DEFAULT_VECTOR_LENGTH         128
 #define PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD  4
@@ -50,27 +51,7 @@ namespace lingua {
         SemanticVector* semvec;
     };
 
-    typedef std::unordered_map<std::string, tag_t> Dictionary;
     typedef std::unordered_map<tag_t, WordInfo> Infotbl;
-
-    class Document {
-    public:
-        Document(const ChatEngine*, const std::string&, const std::string&);
-        Document(const Document&) = default;
-        Document(Document&&) = default;
-
-        ChatEngine* getParent();
-        std::string getTitle() const;
-        std::string getText() const;
-        std::vector<tag_t> getTokens() const;
-
-        void printTokens() const;
-    private:
-        ChatEngine* parent;
-        std::string title;
-        std::string text;
-        std::vector<tag_t> tokens;
-    };
 
     class ChatEngine {
     public:
@@ -89,10 +70,6 @@ namespace lingua {
         void setSourceFile(const std::string&);
 
         void printDocuments() const;
-
-        friend class Document;
-    protected:
-        std::vector<tag_t> tokenize(const std::string&);
     private:
         void preprocess();
 
