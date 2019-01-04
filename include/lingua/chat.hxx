@@ -50,8 +50,8 @@ namespace lingua {
 
         tag_t getTag() const;
         std::string getText() const;
-        const SemanticVector* getSemanticEmbedding() const;
-        const SemanticVector* getContextEmbedding() const;
+        SemanticVector* getSemanticEmbedding();
+        SemanticVector* getContextEmbedding();
 
         void setSemanticEmbedding(const SemanticVector&);
         void setContextEmbedding(const SemanticVector&);
@@ -82,6 +82,9 @@ namespace lingua {
         void analyzeSemantics();
         void learnSemantics();
         void trainOn(const Document&);
+        void trainTargetEmbedding(SemanticVector*, const std::vector<SemanticVector*>&, const std::vector<SemanticVector*>&);
+
+        std::vector<tag_t> generateNoise(const std::vector<tag_t>&);
 
         std::string getSourceFile() const;
         std::vector<Document> getDocs() const;

@@ -30,7 +30,7 @@ namespace lingua {
         auto vl = ChatEngine::instance->getVectorLength();
         auto seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed);
-        std::uniform_real_distribution<float> dist;
+        std::uniform_real_distribution<float> dist(-1.0, 1.0);
 
         for (auto i = 0; i < vl; ++i)
             values[i] = dist(gen);
@@ -87,11 +87,11 @@ namespace lingua {
         return text;
     }
 
-    const SemanticVector* WordInfo::getSemanticEmbedding() const {
+    SemanticVector* WordInfo::getSemanticEmbedding() {
         return semEmb;
     }
 
-    const SemanticVector* WordInfo::getContextEmbedding() const {
+    SemanticVector* WordInfo::getContextEmbedding() {
         return ctxEmb;
     }
 
@@ -148,19 +148,61 @@ namespace lingua {
             auto beginContext = toks.begin() + targetIndex - pContextNeighborhood;
             auto targetPos = toks.begin() + targetIndex;
             auto endContext = toks.begin() + targetIndex + pContextNeighborhood;
-            std::vector<WordInfo> context;
+            WordInfo targetInfo = infotbl[toks[targetIndex]];
+            auto targetEmbedding = targetInfo.getSemanticEmbedding();
+            std::vector<WordInfo> contextInfo;
+            std::vector<WordInfo> noiseInfo;
+            std::vector<SemanticVector*> contextEmbeddings;
+            std::vector<SemanticVector*> noiseEmbeddings;
             std::vector<tag_t> contextTags(beginContext, targetPos);
             std::vector<tag_t> backContextTags(targetPos + 1, endContext);
+            std::vector<tag_t> noiseTags;
 
             contextTags.resize(contextTags.size() << 1);
             contextTags.insert(contextTags.end(), backContextTags.begin(), backContextTags.end());
-            context.resize(contextTags.size());
 
+            noiseTags = generateNoise(contextTags);
+
+            contextInfo.resize(contextTags.size());
             std::transform(contextTags.begin(), contextTags.end(),
-                           context.begin(), [&](auto tag) { return this->getInfotbl()[tag]; });
+                           contextInfo.begin(), [&](auto tag) { return this->getInfotbl()[tag]; });
 
-            break; // DEBUG
+            contextEmbeddings.resize(contextInfo.size());
+            std::transform(contextInfo.begin(), contextInfo.end(),
+                           contextEmbeddings.begin(), [&](auto ci) { return ci.getSemanticEmbedding(); });
+
+            noiseInfo.resize(noiseTags.size());
+            std::transform(noiseTags.begin(), noiseTags.end(),
+                           noiseInfo.begin(), [&](auto tag) { return this->getInfotbl()[tag]; });
+
+            noiseEmbeddings.resize(noiseInfo.size());
+            std::transform(noiseInfo.begin(), noiseInfo.end(),
+                           noiseEmbeddings.begin(), [&](auto ni) { return ni.getSemanticEmbedding(); });
+
+            trainTargetEmbedding(targetEmbedding, contextEmbeddings, noiseEmbeddings);
+            ++targetIndex;
         }
+    }
+
+    void ChatEngine::trainTargetEmbedding(SemanticVector *targetEmbedding, const std::vector<SemanticVector*> &contextEmbeddings, const std::vector<SemanticVector*> &noiseEmbeddings) {
+
+    }
+
+    std::vector<tag_t> ChatEngine::generateNoise(const std::vector<tag_t> &ctx) {
+        auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine gen(seed);
+        std::uniform_int_distribution<tag_t> dist;
+        auto limit = infotbl.size();
+        auto needed = ctx.size() * pNoiseRatio;
+        std::vector<tag_t> noise;
+
+        while (noise.size() < needed) {
+            auto candidate = dist(gen) % limit;
+            if (std::find(ctx.cbegin(), ctx.cend(), candidate) == ctx.cend())
+                noise.push_back(candidate);
+        }
+
+        return noise;
     }
 
     std::string ChatEngine::getSourceFile() const {
