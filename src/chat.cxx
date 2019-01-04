@@ -181,6 +181,7 @@ namespace lingua {
 
             trainTargetEmbedding(targetEmbedding, contextEmbeddings, noiseEmbeddings);
             ++targetIndex;
+            break; // DEBUG
         }
     }
 
