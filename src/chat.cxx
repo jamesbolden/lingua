@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <algorithm>
 #include <random>
 #include <fstream>
 #include <iostream>
@@ -130,6 +131,36 @@ namespace lingua {
 
     void ChatEngine::analyzeSemantics() {
         preprocess();
+        learnSemantics();
+    }
+
+    void ChatEngine::learnSemantics() {
+        for (auto it = docs.begin(); it != docs.end(); ++it)
+            trainOn(*it);
+    }
+
+    void ChatEngine::trainOn(const Document &doc) {
+        auto toks = doc.getTokens();
+        std::size_t targetIndex = pContextNeighborhood;
+        std::size_t lastTargetIndex = toks.size() - pContextNeighborhood - 1;
+
+        while (targetIndex < lastTargetIndex) {
+            auto beginContext = toks.begin() + targetIndex - pContextNeighborhood;
+            auto targetPos = toks.begin() + targetIndex;
+            auto endContext = toks.begin() + targetIndex + pContextNeighborhood;
+            std::vector<WordInfo> context;
+            std::vector<tag_t> contextTags(beginContext, targetPos);
+            std::vector<tag_t> backContextTags(targetPos + 1, endContext);
+
+            contextTags.resize(contextTags.size() << 1);
+            contextTags.insert(contextTags.end(), backContextTags.begin(), backContextTags.end());
+            context.resize(contextTags.size());
+
+            std::transform(contextTags.begin(), contextTags.end(),
+                           context.begin(), [&](auto tag) { return this->getInfotbl()[tag]; });
+
+            break; // DEBUG
+        }
     }
 
     std::string ChatEngine::getSourceFile() const {
@@ -188,23 +219,6 @@ namespace lingua {
         }
 
         return Document(toks);
-    }
-
-    Document ChatEngine::handleToks(const std::vector<std::string> &toks) {
-        std::vector<tag_t> tkns;
-
-        for (auto it = toks.cbegin(); it != toks.cend(); ++it) {
-            if (dict.find(*it) != dict.end())
-                tkns.push_back(dict[*it]);
-            else {
-                tag_t tkn = dict.size();
-                dict[*it] = tkn;
-                infotbl[tkn] = WordInfo(tkn, *it);
-                tkns.push_back(tkn);
-            }
-        }
-
-        return Document(tkns);
     }
 
     void ChatEngine::printDocuments() const {

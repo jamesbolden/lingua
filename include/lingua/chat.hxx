@@ -80,6 +80,8 @@ namespace lingua {
         static void initialize(const std::string&, unsigned = PARAM_DEFAULT_VECTOR_LENGTH, unsigned = PARAM_DEFAULT_CONTEXT_NEIGHBORHOOD, unsigned = PARAM_DEFAULT_NOISE_RATIO);
 
         void analyzeSemantics();
+        void learnSemantics();
+        void trainOn(const Document&);
 
         std::string getSourceFile() const;
         std::vector<Document> getDocs() const;
@@ -95,7 +97,6 @@ namespace lingua {
         void addDoc(const Document&);
 
         Document tokenize(const std::string&);
-        Document handleToks(const std::vector<std::string>&);
         void printDocuments() const;
     private:
         void preprocess();
