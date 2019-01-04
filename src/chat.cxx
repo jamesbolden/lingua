@@ -2,7 +2,6 @@
 #include <FlexLexer.h>
 #include <re2/re2.h>
 #include <boost/tokenizer.hpp>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <algorithm>
@@ -11,6 +10,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cmath>
+#include <cfloat>
 #include <chrono>
 
 namespace lingua {
